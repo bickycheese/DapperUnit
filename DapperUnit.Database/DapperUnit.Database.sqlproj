@@ -61,7 +61,4 @@
   <ItemGroup>
     <Build Include="Pirate.sql" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="DapperUnit.Database.publish.xml" />
-  </ItemGroup>
 </Project>

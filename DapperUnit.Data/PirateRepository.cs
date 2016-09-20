@@ -12,27 +12,31 @@ namespace DapperUnit.Data
 {
     public class PirateRepository : Repository<Pirate>
     {
-        public PirateRepository(IDbTransaction transaction)
-            : base(transaction)
+        public PirateRepository(IDapperUnit dapperUnit)
+            : base(dapperUnit)
         {
         }
 
         public override void Add(Pirate entity)
         {
-            entity.Id = Connection.ExecuteScalar<int>(
-                "INSERT INTO Pirate(Name) VALUES(@Name); SELECT SCOPE_IDENTITY()",
+            if (entity == null)
+                throw new ArgumentNullException("entity");
+
+            entity.Id = _dapperUnit.Connection.ExecuteScalar<int>(
+                "insert into Pirate(Name) values(@Name); select SCOPE_IDENTITY()",
                 param: new { Name = entity.Name },
-                transaction: Transaction);
+                transaction: _dapperUnit.Transaction);
         }
-
-        public override void Delete(Pirate entity)
-        {
-            throw new NotImplementedException();
-        }
-
+        
         public override void Update(Pirate entity)
         {
-            throw new NotImplementedException();
+            if (entity == null)
+                throw new ArgumentNullException("entity");
+
+            _dapperUnit.Connection.Execute(
+                "update Pirate set Name = @Name where Id = @Id",
+                param: new { Id = entity.Id, Name = entity.Name },
+                transaction: _dapperUnit.Transaction);
         }
     }
 }

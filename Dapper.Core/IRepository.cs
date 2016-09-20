@@ -9,15 +9,12 @@ namespace DapperUnit.Core
 {
     public interface IRepository<T>
     {
-        IDbTransaction Transaction { get; }
-        IDbConnection Connection { get; }
-
         T Find(int id);
         IEnumerable<T> Get();
 
         void Add(T entity);
         void Update(T entity);
-        void Delete(T entity);
+        bool Delete(T entity);
         bool Delete(int id);
     }
 }

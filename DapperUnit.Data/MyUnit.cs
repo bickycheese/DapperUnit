@@ -14,7 +14,7 @@ namespace DapperUnit.Data
         private PirateRepository pirateRepository;
         public PirateRepository PirateRepository
         {
-            get { return pirateRepository ?? (pirateRepository = new PirateRepository(Transaction)); }
+            get { return pirateRepository ?? (pirateRepository = new PirateRepository(this)); }
         }
         
         public MyUnit(IDbConnection connection)
