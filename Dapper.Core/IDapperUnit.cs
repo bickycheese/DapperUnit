@@ -13,6 +13,8 @@ namespace DapperUnit.Core
         IDbTransaction Transaction { get; }
         IsolationLevel IsolationLevel { get; }
 
+        Action<string> Log { get; set; }
+
         bool Commit();
         void Rollback();
     }

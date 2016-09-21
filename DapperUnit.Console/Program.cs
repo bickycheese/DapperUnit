@@ -32,6 +32,12 @@ namespace DapperUnit.Console
                 uow.Repositories.Add(typeof(Pirate), new PirateRepository(uow));
                 var last = uow.Repository<Pirate>().Last();
             }
+
+            using (var uow = new MyUnit(connectionString))
+            {
+                uow.Repositories.Add(typeof(Pirate), new PirateRepository(uow));
+                ((IPirateRepository)uow.Repository<Pirate>()).ChangeCountry(null, null);
+            }
         }
     }
 }

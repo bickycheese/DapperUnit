@@ -30,7 +30,12 @@
     <WarningLevel>4</WarningLevel>
   </PropertyGroup>
   <ItemGroup>
+    <Reference Include="nunit.framework, Version=3.4.1.0, Culture=neutral, PublicKeyToken=2638cd05610744eb, processorArchitecture=MSIL">
+      <HintPath>..\packages\NUnit.3.4.1\lib\net45\nunit.framework.dll</HintPath>
+      <Private>True</Private>
+    </Reference>
     <Reference Include="System" />
+    <Reference Include="System.configuration" />
     <Reference Include="System.Core" />
     <Reference Include="System.Xml.Linq" />
     <Reference Include="System.Data.DataSetExtensions" />
@@ -40,7 +45,33 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Builder\PirateBuilder.cs" />
+    <Compile Include="Integration\DapperUnitTests.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="App.config" />
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\Dapper.Core\DapperUnit.Core.csproj">
+      <Project>{320e7462-f326-40ff-a503-dbe0885a1539}</Project>
+      <Name>DapperUnit.Core</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DapperUnit.Data\DapperUnit.Data.csproj">
+      <Project>{5a577da1-d7b0-4f7c-add9-df3e42971680}</Project>
+      <Name>DapperUnit.Data</Name>
+    </ProjectReference>
+    <ProjectReference Include="..\DapperUnit.Entities\DapperUnit.Entities.csproj">
+      <Project>{658bc8eb-8db7-4b84-a1ee-8db4b0a747b4}</Project>
+      <Name>DapperUnit.Entities</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup>
+    <Folder Include="Unit\" />
+  </ItemGroup>
+  <ItemGroup>
+    <Service Include="{82A7F48D-3B50-4B1E-B82E-3ADA8210C358}" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
