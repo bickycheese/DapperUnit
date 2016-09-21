@@ -12,6 +12,7 @@ namespace DapperUnit.Core
         T Find(int id);
         bool Exists(T entity);
         int Count();
+        T Last();
         IEnumerable<T> Get();
         IEnumerable<T> Page(int pageSize, int pageNumber, int count);
 

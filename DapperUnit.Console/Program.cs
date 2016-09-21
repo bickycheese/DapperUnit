@@ -19,16 +19,15 @@ namespace DapperUnit.Console
             using (var uow = new MyUnit(connectionString))
             {
                 uow.Repositories.Add(typeof(Pirate), new PirateRepository(uow));
-
-                var id = uow.Repository<Pirate>().Add(new Pirate { Name = "Stanny" });
+                uow.Repository<Pirate>().Add(new Pirate { Name = "Stanny" });
                 uow.Commit();
 
                 var count = uow.Repository<Pirate>().Count();
+            }
 
-                uow.Repository<Pirate>().Delete(Enumerable.Range(id, count).ToArray());
-                uow.Commit();
-
-                count = uow.Repository<Pirate>().Count();
+            using (var uow = new MyUnit(connectionString))
+            {
+                var last = uow.Repository<Pirate>().Last();
             }
         }
     }

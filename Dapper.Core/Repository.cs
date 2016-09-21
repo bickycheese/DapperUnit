@@ -95,6 +95,13 @@ namespace DapperUnit.Core
             return _dapperUnit.Connection.Query<T>(query, transaction: _dapperUnit.Transaction).ToList();
         }
 
+        public virtual T Last()
+        {
+            return _dapperUnit.Connection.QueryFirst<T>(
+                $"select top 1 * from {typeof(T).Name} order by Id desc",
+                transaction: _dapperUnit.Transaction);
+        }
+
         public virtual int Count()
         {
             return _dapperUnit.Connection.ExecuteScalar<int>(
