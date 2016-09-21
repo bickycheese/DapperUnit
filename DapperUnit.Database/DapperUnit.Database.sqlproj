@@ -57,8 +57,16 @@
   <Import Condition="'$(SQLDBExtensionsRefPath)' == ''" Project="$(MSBuildExtensionsPath)\Microsoft\VisualStudio\v$(VisualStudioVersion)\SSDT\Microsoft.Data.Tools.Schema.SqlTasks.targets" />
   <ItemGroup>
     <Folder Include="Properties" />
+    <Folder Include="Post-Deployement" />
   </ItemGroup>
   <ItemGroup>
     <Build Include="Pirate.sql" />
+    <Build Include="Ship.sql" />
+    <Build Include="PirateShip.sql" />
+    <Build Include="Country.sql" />
+    <PostDeploy Include="Post-Deployement\Seed.sql" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="DapperUnit.Database.publish.xml" />
   </ItemGroup>
 </Project>

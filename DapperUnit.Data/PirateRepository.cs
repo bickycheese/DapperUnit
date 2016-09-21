@@ -22,9 +22,12 @@ namespace DapperUnit.Data
             if (entity == null)
                 throw new ArgumentNullException("entity");
 
+            if(entity.Country == null)
+                throw new ArgumentNullException("entity.Country");
+
             entity.Id = _dapperUnit.Connection.ExecuteScalar<int>(
-                "insert into Pirate(Name) values(@Name); select SCOPE_IDENTITY()",
-                param: new { Name = entity.Name },
+                "insert into Pirate(Name, CountryId) values(@Name, @CountryId); select SCOPE_IDENTITY()",
+                param: new { Name = entity.Name, CountryId = entity.Country.Id },
                 transaction: _dapperUnit.Transaction);
 
             return entity.Id;
@@ -39,6 +42,14 @@ namespace DapperUnit.Data
                 "update Pirate set Name = @Name where Id = @Id",
                 param: new { Id = entity.Id, Name = entity.Name },
                 transaction: _dapperUnit.Transaction);
+        }
+
+        public override Pirate Last()
+        {
+            return _dapperUnit.Connection.Query<Pirate, Country, Pirate>(
+                $"select top 1 * from Pirate p join Country c on c.Id = p.CountryId order by p.Id desc",
+                (pirate, country) => { pirate.Country = country; return pirate; },
+                transaction: _dapperUnit.Transaction).FirstOrDefault();
         }
     }
 }

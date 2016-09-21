@@ -18,8 +18,10 @@ namespace DapperUnit.Console
 
             using (var uow = new MyUnit(connectionString))
             {
+                var country = uow.Repository<Country>().Find(1);
+
                 uow.Repositories.Add(typeof(Pirate), new PirateRepository(uow));
-                uow.Repository<Pirate>().Add(new Pirate { Name = "Stanny" });
+                uow.Repository<Pirate>().Add(new Pirate { Name = "Stanny", Country = country });
                 uow.Commit();
 
                 var count = uow.Repository<Pirate>().Count();
@@ -27,6 +29,7 @@ namespace DapperUnit.Console
 
             using (var uow = new MyUnit(connectionString))
             {
+                uow.Repositories.Add(typeof(Pirate), new PirateRepository(uow));
                 var last = uow.Repository<Pirate>().Last();
             }
         }
