@@ -10,11 +10,17 @@ namespace DapperUnit.Core
     public interface IRepository<T>
     {
         T Find(int id);
+        bool Exists(T entity);
+        int Count();
         IEnumerable<T> Get();
+        IEnumerable<T> Page(int pageSize, int pageNumber, int count);
 
-        void Add(T entity);
+        int Add(T entity);
         void Update(T entity);
-        bool Delete(T entity);
-        bool Delete(int id);
+        int Delete(T entity);
+        int Delete(int id);
+        int Delete(int[] id);
+        bool Delete(List<T> entities);
+        bool Delete(params T[] entities);
     }
 }

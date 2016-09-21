@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Data.SqlClient;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -10,7 +11,16 @@ namespace DapperUnit.Core
 {
     public class DapperUnit : IDapperUnit
     {
-        private Dictionary<string, dynamic> _repositories;
+        public Action<string> Log { get; set; } = (s) => { Debug.WriteLine(s); };
+
+        private Dictionary<Type, dynamic> _repositories;
+        public Dictionary<Type, dynamic> Repositories
+        {
+            get { return _repositories; }
+            set { _repositories = value; }
+        }
+        
+        private bool _disposed;
 
         private IDbConnection _connection;
         public IDbConnection Connection
@@ -26,17 +36,33 @@ namespace DapperUnit.Core
             private set { _transaction = value; }
         }
 
-        private bool _disposed;
-
-        public DapperUnit(IDbConnection connection)
+        private IsolationLevel _isolationLevel;
+        public IsolationLevel IsolationLevel
         {
-            _repositories = new Dictionary<string, dynamic>();
-
-            _connection = connection;
-            _connection.Open();
-
-            _transaction = _connection.BeginTransaction();
+            get { return _isolationLevel; }
+            set { _isolationLevel = value; }
         }
+        
+        public DapperUnit(IDbConnection connection, IsolationLevel isolationLevel = IsolationLevel.Unspecified)
+        {
+            _connection = connection;
+            _isolationLevel = isolationLevel;
+            _repositories = new Dictionary<Type, dynamic>();
+
+            try
+            {
+                _connection.Open();
+                _transaction = _connection.BeginTransaction(isolationLevel);
+            }
+            catch (Exception ex)
+            {
+                Log(ex.ToString());
+                throw;
+            }
+        }
+
+        public DapperUnit(string connectionString, IsolationLevel isolationLevel = IsolationLevel.Unspecified)
+            : this(new SqlConnection(connectionString), isolationLevel) { }
 
         public IRepository<TEntity> Repository<TEntity>() where TEntity : class, IEntity
         {
@@ -46,40 +72,29 @@ namespace DapperUnit.Core
             //}
 
             if (_repositories == null)
-            {
-                _repositories = new Dictionary<string, dynamic>();
-            }
+                _repositories = new Dictionary<Type, dynamic>();
 
-            var type = typeof(TEntity).Name;
-
-            if (_repositories.ContainsKey(type))
-            {
-                return (IRepository<TEntity>)_repositories[type];
-            }
+            if (_repositories.ContainsKey(typeof(TEntity)))
+                return (IRepository<TEntity>)_repositories[typeof(TEntity)];
 
             var repositoryType = typeof(Repository<>);
+            _repositories.Add(typeof(TEntity), Activator.CreateInstance(repositoryType.MakeGenericType(typeof(TEntity)), this));
 
-            _repositories.Add(type, Activator.CreateInstance(repositoryType.MakeGenericType(typeof(TEntity)), this));
-
-            return _repositories[type];
+            return _repositories[typeof(TEntity)];
         }
-
-
-        public DapperUnit(string connectionString)
-            : this(new SqlConnection(connectionString))
-        {
-
-        }
-
-        public void Commit()
+        
+        public bool Commit()
         {
             try
             {
                 _transaction.Commit();
+                return true;
             }
-            catch
+            catch(Exception ex)
             {
                 _transaction.Rollback();
+                Log(ex.ToString());
+                return false;
                 throw;
             }
             finally
@@ -88,12 +103,17 @@ namespace DapperUnit.Core
             }
         }
 
+        public void Rollback()
+        {
+            _transaction.Rollback();
+
+            Reset();
+        }
+
         public void Reset()
         {
             _transaction.Dispose();
             _transaction = _connection.BeginTransaction();
-
-            _repositories = new Dictionary<string, dynamic>();
         }
 
         public void Dispose()

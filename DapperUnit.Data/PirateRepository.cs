@@ -17,7 +17,7 @@ namespace DapperUnit.Data
         {
         }
 
-        public override void Add(Pirate entity)
+        public override int Add(Pirate entity)
         {
             if (entity == null)
                 throw new ArgumentNullException("entity");
@@ -26,6 +26,8 @@ namespace DapperUnit.Data
                 "insert into Pirate(Name) values(@Name); select SCOPE_IDENTITY()",
                 param: new { Name = entity.Name },
                 transaction: _dapperUnit.Transaction);
+
+            return entity.Id;
         }
         
         public override void Update(Pirate entity)

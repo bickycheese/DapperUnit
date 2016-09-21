@@ -16,27 +16,19 @@ namespace DapperUnit.Console
         {
             var connectionString = ConfigurationManager.ConnectionStrings["DapperUnit"].ConnectionString;
 
-            //using (var uow = new MyUnit(connectionString))
-            //{
-            //    for (int i = 0; i < 100; i++)
-            //    {
-            //        uow.PirateRepository.Add(new Pirate { Name = $"Pirate {i}" });
-            //    }
-
-            //    uow.Commit();                
-            //}
-
             using (var uow = new MyUnit(connectionString))
             {
-                //var pirates = uow.PirateRepository.Page(13, 0, 6);
+                uow.Repositories.Add(typeof(Pirate), new PirateRepository(uow));
 
-                //var pirate = uow.PirateRepository.Find(1);
-                //pirate.Name = "Stanny";
+                var id = uow.Repository<Pirate>().Add(new Pirate { Name = "Stanny" });
+                uow.Commit();
 
-                //uow.PirateRepository.Update(pirate);
-                //uow.Commit();
+                var count = uow.Repository<Pirate>().Count();
 
-                var pirate = uow.Repository<Pirate>().Find(1);
+                uow.Repository<Pirate>().Delete(Enumerable.Range(id, count).ToArray());
+                uow.Commit();
+
+                count = uow.Repository<Pirate>().Count();
             }
         }
     }

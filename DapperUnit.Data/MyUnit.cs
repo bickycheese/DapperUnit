@@ -11,11 +11,11 @@ namespace DapperUnit.Data
 {
     public class MyUnit : Core.DapperUnit
     {
-        private PirateRepository pirateRepository;
-        public PirateRepository PirateRepository
-        {
-            get { return pirateRepository ?? (pirateRepository = new PirateRepository(this)); }
-        }
+        //private PirateRepository pirateRepository;
+        //public PirateRepository PirateRepository
+        //{
+        //    get { return pirateRepository ?? (pirateRepository = new PirateRepository(this)); }
+        //}
         
         public MyUnit(IDbConnection connection)
             :base(connection)

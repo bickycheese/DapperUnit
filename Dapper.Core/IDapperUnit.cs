@@ -9,9 +9,11 @@ namespace DapperUnit.Core
 {
     public interface IDapperUnit : IDisposable
     {
-        IDbTransaction Transaction { get; }
         IDbConnection Connection { get; }
+        IDbTransaction Transaction { get; }
+        IsolationLevel IsolationLevel { get; }
 
-        void Commit();
+        bool Commit();
+        void Rollback();
     }
 }

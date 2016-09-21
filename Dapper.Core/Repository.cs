@@ -17,7 +17,7 @@ namespace DapperUnit.Core
             _dapperUnit = dapperUnit;
         }
 
-        public virtual void Add(T entity)
+        public virtual int Add(T entity)
         {
             // not possible to implement here.
             throw new NotImplementedException();
@@ -29,17 +29,37 @@ namespace DapperUnit.Core
             throw new NotImplementedException();
         }
 
-        public virtual bool Delete(T entity)
+        public virtual int Delete(T entity)
         {
             return Delete(entity.Id);
         }
 
-        public virtual bool Delete(int id)
+        public virtual bool Delete(List<T> entities)
+        {
+            var ids = entities.Select(e => e.Id).ToArray();
+            return Delete(ids) == ids.Count();
+        }
+
+        public virtual bool Delete(params T[] entities)
+        {
+            var ids = entities.Cast<IEntity>().Select(e => e.Id).ToArray();
+            return Delete(ids) == ids.Count();
+        }
+
+        public virtual int Delete(int[] ids)
+        {
+            return _dapperUnit.Connection.Execute(
+                $"delete from {typeof(T).Name} where Id in @Ids",
+                param: new { Ids = ids },
+                transaction: _dapperUnit.Transaction);
+        }
+
+        public virtual int Delete(int id)
         {
             return _dapperUnit.Connection.Execute(
                 $"delete from {typeof(T).Name} where Id = @Id",
                 param: new { Id = id },
-                transaction: _dapperUnit.Transaction) == 1;
+                transaction: _dapperUnit.Transaction);
         }
 
         public virtual T Find(int id)
@@ -80,6 +100,11 @@ namespace DapperUnit.Core
             return _dapperUnit.Connection.ExecuteScalar<int>(
                 $"select count(*) from {typeof(T).Name}",
                 transaction: _dapperUnit.Transaction);
+        }
+
+        public virtual bool Exists(T entity)
+        {
+            return Find(entity.Id) != null;
         }
     }
 }
