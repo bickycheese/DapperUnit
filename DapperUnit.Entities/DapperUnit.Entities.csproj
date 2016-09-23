@@ -43,6 +43,7 @@
     <Compile Include="Country.cs" />
     <Compile Include="Pirate.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Ship.cs" />
   </ItemGroup>
   <ItemGroup>
     <ProjectReference Include="..\Dapper.Core\DapperUnit.Core.csproj">

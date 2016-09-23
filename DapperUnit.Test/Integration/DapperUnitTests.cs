@@ -29,7 +29,7 @@ namespace DapperUnit.Test.Integration
                 uow.Repositories.Add(typeof(Country), new Repository<Country>(uow));
 
                 var country = uow.Repository<Country>().Find(1);
-                
+
                 id = uow.Repository<Pirate>().Add(new Pirate
                 {
                     Name = "Stanny",
@@ -48,6 +48,18 @@ namespace DapperUnit.Test.Integration
 
                 Assert.NotNull(pirate);
                 Assert.AreEqual(id, pirate.Id);
+            }
+        }
+
+        [Test]
+        public void find_by_id()
+        {
+            using (var uow = new Core.DapperUnit(connectionString))
+            {
+                // specific implementation
+                uow.Repositories.Add(typeof(Pirate), new PirateRepository(uow));
+
+                var pirate = uow.Repository<Pirate>().Find(1);
             }
         }
     }

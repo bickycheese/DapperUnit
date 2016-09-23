@@ -10,7 +10,14 @@ Post-Deployment Script Template
 --------------------------------------------------------------------------------------
 */
 
-insert into Country values
-(
-	('Belgium')
-)
+insert into Country (Name) values ('Belgium')
+
+insert into Pirate (Name, CountryId) values ('Stanny', 1)
+insert into Pirate (Name, CountryId) values ('Jack', 1)
+
+insert into Ship (Name, CountryId) values ('Marie Louise', 1)
+insert into Ship (Name, CountryId) values ('Black Pearl', 1)
+
+insert into PirateShip values (1, 1)
+insert into PirateShip values (2, 1)
+insert into PirateShip values (2, 2)

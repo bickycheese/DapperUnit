@@ -46,6 +46,7 @@
   <ItemGroup>
     <Compile Include="DapperUnit.cs" />
     <Compile Include="IDapperUnit.cs" />
+    <Compile Include="IDeleted.cs" />
     <Compile Include="IEntity.cs" />
     <Compile Include="IRepository.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

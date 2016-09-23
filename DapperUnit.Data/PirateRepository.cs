@@ -15,7 +15,7 @@ namespace DapperUnit.Data
         
     }
 
-    public class PirateRepository : Repository<Pirate>, IPirateRepository
+    public class PirateRepository : Repository<Pirate>, IRepository<Pirate>, IPirateRepository
     {
         public PirateRepository(IDapperUnit dapperUnit)
             : base(dapperUnit)
@@ -86,11 +86,19 @@ namespace DapperUnit.Data
 
         public override Pirate Find(int id)
         {
-            return _dapperUnit.Connection.Query<Pirate, Country, Pirate>(
-                    $"select * from Pirate p join Country c on c.Id = p.CountryId where p.Id = @Id",
-                    (pirate, country) => { pirate.Country = country; return pirate; },
-                    param: new { Id = id },
-                    transaction: _dapperUnit.Transaction).FirstOrDefault();
+            var query = $@"select * from Pirate p join Country c on c.Id = p.CountryId where p.Id = @Id
+                           select * from PirateShip ps join Ship s on s.Id = ps.ShipId where ps.PirateId = @Id";
+
+            using (var multiple = _dapperUnit.Connection.QueryMultiple(query, param: new { Id = id }, transaction: _dapperUnit.Transaction))
+            {
+                var pirate = multiple.Read<Pirate>().SingleOrDefault();
+                var ships = multiple.Read<Ship>().ToList();
+
+                if (pirate != null)
+                    pirate.Ships = ships;
+
+                return pirate;
+            }
         }
     }
 }

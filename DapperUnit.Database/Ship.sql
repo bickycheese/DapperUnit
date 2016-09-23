@@ -2,6 +2,8 @@
 (
 	[Id] INT NOT NULL PRIMARY KEY IDENTITY, 
     [Name] NVARCHAR(255) NOT NULL, 
-    [CountryId] INT NOT NULL, 
+    [CountryId] INT NOT NULL,
+	[DateCreated] DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP, 
+    [Deleted] BIT NOT NULL DEFAULT 0,  
     CONSTRAINT [FK_Ship_Country] FOREIGN KEY ([CountryId]) REFERENCES [Country]([Id])
 )
