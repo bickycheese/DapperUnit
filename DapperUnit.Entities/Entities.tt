@@ -1,0 +1,360 @@
+﻿// This output file is not needed...
+<#@ template debug="false" hostspecific="true" language="C#" #>
+<#@ include file="FileGenerator.ttinclude" #>
+<#/*
+ include file="EF.Utility.CS.ttinclude"
+ THIS FILE IS INCLUDED IN ENTITY FRAMEWORK
+ located in C:\Program Files (x86)\Microsoft Visual Studio 14.0\Common7\IDE\Extensions\Microsoft\Entity Framework Tools\Templates\Includes
+ but I've copied its contents to FileGenerator.ttinclude to avoid a reference to EF
+*/#>
+<#@ output extension=".cs" #>
+<#@ assembly name="System.Core" #>
+<#@ import namespace="System.Linq" #>
+<#@ import namespace="System.Text" #>
+<#@ import namespace="System.Collections.Generic" #>
+<#@ import namespace="System.Globalization" #>
+<#@ assembly name="System.Data" #>
+<#@ import namespace="System.Data" #>
+<#@ import namespace="System.Data.SqlClient" #>
+<#@ assembly name="System.Data.Entity.Design" #>
+<#@ import namespace="System.Data.Entity.Design.PluralizationServices" #>
+<#@ assembly name="Microsoft.SqlServer.Smo" #>
+<#@ import namespace="Microsoft.SqlServer.Management.Smo" #>
+<#@ assembly name="Microsoft.SqlServer.ConnectionInfo" #>
+<#@ import namespace="Microsoft.SqlServer.Management.Common" #>
+<#
+    // EDIT SETTINGS HERE ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+    TemplateSettings.DatabaseName = "DapperUnit";
+    TemplateSettings.ConnectionString = $@"Data Source=(localdb)\MSSQLLocalDB;Initial Catalog={TemplateSettings.DatabaseName};Integrated Security=True;MultipleActiveResultSets=True;Connect Timeout=60";
+    TemplateSettings.IncludedSchemas = new List<string>() { "dbo" };
+    TemplateSettings.ExcludedTables = new List<string>(){ "PirateShip" };
+    TemplateSettings.CreateConstructor = true;
+    // -----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+    SqlConnection connection = new SqlConnection(TemplateSettings.ConnectionString);
+    ServerConnection serverConnection = new ServerConnection(connection);
+    Server server = new Server(serverConnection);
+    Database database = server.Databases[TemplateSettings.DatabaseName];
+
+    var tables = new List<Table>(database.Tables.Cast<Table>());
+    var properties = GetProperties(tables);
+    
+    var fileManager = EntityFrameworkTemplateFileManager.Create(this);
+    fileManager.StartHeader(); 
+
+    foreach(var table in properties
+        .Where(p => p.Table != null)
+        .Select(p => p.Table)
+        .Distinct())
+    {
+        var tableProperties = properties.Where(p => p.Table == table);
+        var navigationProperties = tableProperties.Where(tp => tp.NavigationProperty);
+        var hasIdentity = tableProperties.Any(tp => tp.Identity && tp.Name == "Id");
+
+        fileManager.StartNewFile($"{table.Name}.cs");
+#>
+using DapperUnit.Core;
+using System;
+using System.Collections.Generic;
+
+namespace DapperUnit.Entities
+{
+    public class <#=table.Name#><#=hasIdentity ? " : IEntity" : ""#>
+    {
+
+    }
+}
+<#
+    }
+    fileManager.Process();
+#>
+<#+
+public List<DatabaseFieldInformation> GetProperties(List<Table> tables)
+{
+    var collection = new List<DatabaseFieldInformation>();
+
+    foreach (var table in tables)
+    {
+        if((TemplateSettings.IncludedTables.Any() && !TemplateSettings.IncludedTables.Contains(table.Name))
+         || (TemplateSettings.ExcludedTables.Any() && TemplateSettings.ExcludedTables.Contains(table.Name)))
+            continue;
+
+        if((TemplateSettings.IncludedSchemas.Any() && !TemplateSettings.IncludedSchemas.Contains(table.Schema))
+         || (TemplateSettings.ExcludedSchemas.Any() && TemplateSettings.ExcludedSchemas.Contains(table.Schema)))
+            continue;
+        
+        collection.AddRange(GetPropertiesFor(table));
+    }
+
+    return collection;
+}
+public string CreateConstructor(Table table, List<DatabaseFieldInformation> navigationProperties)
+{
+    if(!navigationProperties.Any())
+        return string.Empty;
+
+    var stringbuilder = new StringBuilder();
+    stringbuilder.AppendLine($"\t\tpublic {table.Name}()");
+    stringbuilder.AppendLine("\t\t{");
+    foreach (var navigationProperty in navigationProperties)
+    {
+         stringbuilder.AppendLine($"\t\t\t{navigationProperty.Name} = new {navigationProperty.DataType}();");
+    }
+    stringbuilder.AppendLine("\t\t}");
+
+    return stringbuilder.ToString();
+}
+public string CreateProperties(List<DatabaseFieldInformation> databaseFields)
+{
+    return string.Join(Environment.NewLine, databaseFields);
+}
+public List<DatabaseFieldInformation> GetPropertiesFor(Table table)
+{
+    var result = new List<DatabaseFieldInformation>();
+
+    foreach (var foreignKey in table.ForeignKeys.Cast<ForeignKey>())
+    {
+         result.Add(new DatabaseFieldInformation(foreignKey.ReferencedTable));
+    }
+
+    using (var connection = new SqlConnection(TemplateSettings.ConnectionString))
+    {
+        connection.Open();
+
+        var query = $"select top 0 * from [{table.Schema}].[{table.Name}]";
+        var command = new SqlCommand(query, connection);
+        var schema = command.ExecuteReader(CommandBehavior.SchemaOnly).GetSchemaTable();
+
+        foreach (DataRow row in schema.Rows)
+        {
+            var name = (string)row["ColumnName"];
+            var dataType = (string)row["DataTypeName"];
+
+            var databaseFieldInformation =
+            new DatabaseFieldInformation(name, dataType)
+            {
+                Table = table,
+                Length = (int)row["ColumnSize"],
+                ReadOnly = (bool)row["IsReadOnly"],
+                Nullable = (bool)row["AllowDBNull"],
+                Identity = (bool)row["IsIdentity"],
+                CollectionProperty = false,
+                NavigationProperty = false
+            };
+            
+            if (!databaseFieldInformation.Identity && databaseFieldInformation.ReadOnly)
+                continue;
+
+            //result.Add($"\t\t{comment}public {clrType} {name} {{ get; set; }}");
+            result.Add(databaseFieldInformation);
+        };
+
+        connection.Close();
+    }
+
+    foreach (var property in result.Where(p => p.NavigationProperty))
+    {
+        
+    }
+
+    return result;
+}
+public class DatabaseFieldInformation
+{
+    public Table Table { get; set; }
+    public string Name { get; private set; }
+    public string DataType { get; private set; }
+    public int Length { get; set; }
+    public bool ReadOnly { get; set; }
+    public bool Identity { get; set; }
+    public string ClrType { get; private set; }
+    public string Comment { get; private set; }
+    public bool NavigationProperty { get; set; }
+    public bool CollectionProperty { get; set; }
+    public bool Nullable { get; set; }
+
+    public DatabaseFieldInformation(string name)
+    {
+        Name = ClrType = DataType = name;
+        NavigationProperty = true;
+    }
+
+    public DatabaseFieldInformation(string name, string dataType)
+    {
+        Name = name;
+        DataType = dataType;
+        ClrType = ConvertType(dataType);
+
+        if (ClrType == null)
+        {
+            Comment = "//";
+            ClrType = DataType;
+        }
+    }
+
+    public override string ToString()
+    {
+        if(NavigationProperty)
+        {
+            if(CollectionProperty)
+            {
+                return $"\t\tpublic List<{ClrType}> {Name} {{ get; set; }}";
+            }
+            else
+            {
+                return $"\t\tpublic {ClrType} {Name} {{ get; set; }}";
+            }
+        }
+        else
+        {
+            return $"\t\t{Comment}public {ClrType} {Name} {{ get; set; }}";
+        }
+    }
+
+    public static string Pluralize(string singular, CultureInfo cultureInfo = null)
+    {
+        if (cultureInfo == null)
+            cultureInfo = CultureInfo.GetCultureInfo("en-US");
+        else
+        {
+            if (cultureInfo != CultureInfo.GetCultureInfo("en-US"))
+                throw new NotImplementedException("Currently only en-US pluralization is supported.");
+        }
+
+        PluralizationService service = PluralizationService.CreateService(cultureInfo);
+
+        if (service.IsPlural(singular))
+            return singular;
+
+        return service.Pluralize(singular);
+    }
+
+    public static string ConvertType(string type)
+    {
+        type = type.ToLower();
+
+        var types = new Dictionary<string, string>()
+        {
+            //{"bigint","Int64"},
+            {"bigint","long"},
+            {"binary","byte[]"},
+            {"bit","bool"},
+            {"char","string"},
+            {"date","DateTime"},
+            {"datetime","DateTime"},
+            {"datetime2","DateTime"},
+            {"datetimeoffset","DateTimeOffset"},
+            {"decimal","decimal"},
+            {"float","Double"},
+            {"image","byte[]"},
+            //{"int","Int32"},
+            {"int","int"},
+            {"money","decimal"},
+            {"nchar","string"},
+            {"ntext","string"},
+            {"numeric","decimal"},
+            {"nvarchar","string"},
+            {"real","Single"},
+            {"rowversion","byte[]"},
+            {"smalldatetime","DateTime"},
+            {"smallint","Int16"},
+            {"smallmoney","decimal"},
+            {"text","string"},
+            {"time","TimeSpan"},
+            {"timestamp","byte[]"},
+            {"tinyint","byte"},
+            {"uniqueidentifier","Guid"},
+            {"varbinary","byte[]"},
+            {"varchar","string"},
+            {"xml","Xml"}
+        };
+
+        if (types.ContainsKey(type))
+            return types[type];
+        else
+            return null;
+    }
+}
+static class TemplateSettings
+{
+    private static string schemaName;
+    public static string SchemaName
+    {
+        get { return schemaName; }
+        set
+        {
+            schemaName = value;
+            includedSchemas = new List<string>(){ schemaName };
+        }
+    }
+    private static List<string> includedSchemas;
+    public static List<string> IncludedSchemas
+    {
+        get { return includedSchemas; }
+        set
+        {
+            if(excludedSchemas.Intersect(value).Any())
+                throw new ArgumentException("Conflicting values with ExcludedSchemas.");
+
+            includedSchemas = value;
+        }
+    }
+    private static List<string> excludedSchemas;
+    public static List<string> ExcludedSchemas
+    {
+        get { return excludedSchemas; }
+        set
+        {
+            if(includedSchemas.Intersect(value).Any())
+                throw new ArgumentException("Conflicting values with IncludedSchemas.");
+
+            excludedSchemas = value;
+        }
+    }
+    private static string tableName;
+    public static string TableName
+    {
+        get { return tableName; }
+        set
+        {
+            tableName = value;
+            includedTables = new List<string>(){ tableName };
+        }
+    }
+    private static List<string> includedTables;
+    public static List<string> IncludedTables
+    {
+        get { return includedTables; }
+        set
+        {
+            if(excludedTables.Intersect(value).Any())
+                throw new ArgumentException("Conflicting values with ExcludedTables.");
+
+            includedTables = value;
+        }
+    }
+    private static List<string> excludedTables;
+    public static List<string> ExcludedTables
+    {
+        get { return excludedTables; }
+        set
+        {
+            if(includedTables.Intersect(value).Any())
+                throw new ArgumentException("Conflicting values with IncludedTables.");
+
+            excludedTables = value;
+        }
+    }
+    public static string DatabaseName { get; set; }
+    public static string ConnectionString { get; set; }
+    public static bool CreateConstructor { get; set; }
+
+    static TemplateSettings()
+    {
+        includedTables 	= new List<string>();
+        excludedTables 	= new List<string>();
+        includedSchemas	= new List<string>();
+        excludedSchemas	= new List<string>();
+    }
+}
+#>
